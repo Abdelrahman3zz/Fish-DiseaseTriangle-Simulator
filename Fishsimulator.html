@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aquatic Disease Triangle Simulator</title>
+    <style>
+        :root {
+            --primary-blue: #1e3a8a;
+            --secondary-blue: #3b82f6;
+            --light-blue: #eff6ff;
+            --env-color: rgba(59, 130, 246, 0.7); 
+            --host-color: rgba(14, 165, 233, 0.7); 
+            --path-color: rgba(99, 102, 241, 0.7); 
+            --healthy: #10b981;
+            --stress: #f59e0b;
+            --outbreak: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Updated Header Styling */
+        header {
+            background-color: var(--primary-blue);
+            color: white;
+            width: 100%;
+            text-align: center;
+            padding: 1.5rem 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+
+        header h1 { 
+            margin: 0 0 10px 0; 
+            font-size: 1.8rem; 
+        }
+        
+        header .affiliation { 
+            margin: 0; 
+            font-size: 1.05rem; 
+            font-weight: 600; 
+            color: #e0e7ff; 
+        }
+        
+        header .presenter { 
+            margin: 5px 0 15px 0; 
+            font-size: 0.95rem; 
+            font-style: italic; 
+            color: #c7d2fe; 
+        }
+        
+        header .instructions { 
+            margin: 0; 
+            font-size: 0.9rem; 
+            opacity: 0.9; 
+            border-top: 1px solid rgba(255,255,255,0.2); 
+            padding-top: 12px; 
+            display: inline-block;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Venn Diagram Section */
+        .venn-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 350px;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid var(--light-blue);
+        }
+
+        .circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            position: absolute;
+            mix-blend-mode: multiply;
+            display: flex;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            transition: transform 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .central-disease-text {
+            position: absolute;
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+            z-index: 10;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        /* Text Positioning */
+        #circ-env { 
+            background-color: var(--env-color); 
+            transform: translate(0, -30px); 
+            z-index: 2; 
+            align-items: flex-start; 
+            justify-content: center;
+            padding-top: 25px;
+        }
+        #circ-host { 
+            background-color: var(--host-color); 
+            transform: translate(-40px, 30px); 
+            z-index: 1; 
+            align-items: flex-end; 
+            justify-content: flex-start;
+            padding-bottom: 40px;
+            padding-left: 25px;
+        }
+        #circ-path { 
+            background-color: var(--path-color); 
+            transform: translate(40px, 30px); 
+            z-index: 3; 
+            align-items: flex-end; 
+            justify-content: flex-end;
+            padding-bottom: 40px;
+            padding-right: 25px;
+        }
+
+        /* Status Bar */
+        .status-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        #status-text {
+            font-size: 1.8rem;
+            font-weight: 900;
+            margin: 10px 0;
+            color: var(--healthy);
+            transition: color 0.3s;
+        }
+
+        /* Trigger Alert Box */
+        #trigger-alert {
+            display: none;
+            background-color: #fee2e2;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 2px solid #ef4444;
+            font-size: 1.05rem;
+            text-align: left;
+            line-height: 1.5;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Reset Button Styling */
+        .reset-btn {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.2s ease;
+        }
+
+        .reset-btn:hover { background-color: var(--secondary-blue); }
+
+        /* Controls Section */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .control-group {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-top: 4px solid var(--primary-blue);
+        }
+
+        .control-group h3 {
+            margin-top: 0;
+            border-bottom: 2px solid var(--light-blue);
+            padding-bottom: 5px;
+            color: var(--primary-blue);
+        }
+
+        .slider-container { margin-bottom: 15px; }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        input[type=range] { width: 100%; accent-color: var(--secondary-blue); }
+
+        @media (max-width: 600px) {
+            .circle { width: 150px; height: 150px; font-size: 0.8rem; }
+            .venn-container { height: 280px; }
+            #circ-env { padding-top: 15px; }
+            #circ-host { padding-bottom: 25px; padding-left: 15px; }
+            #circ-path { padding-bottom: 25px; padding-right: 15px; }
+            .central-disease-text { font-size: 1.3rem; }
+            header h1 { font-size: 1.4rem; }
+            header .affiliation { font-size: 0.9rem; }
+            header .presenter { font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Aquatic Disease Triangle Simulator</h1>
+        <p class="affiliation">Department of Aquatic Animal Medicine, Faculty of Veterinary Medicine, Benha University</p>
+        <p class="presenter">Presented by: Section 6, Fifth Year</p>
+        <p class="instructions">Adjust the parameters below to observe disease interaction.</p>
+    </header>
+
+    <div class="container">
+        <div class="venn-container">
+            <div class="circle" id="circ-env">Environment</div>
+            <div class="circle" id="circ-host">Host</div>
+            <div class="circle" id="circ-path">Pathogen</div>
+            <div class="central-disease-text" id="disease-label">Disease</div>
+        </div>
+
+        <div class="status-panel">
+            <h2>Current System Status:</h2>
+            <div id="status-text">SYSTEM IS HEALTHY</div>
+            <div id="trigger-alert"></div>
+            <button id="reset-btn" class="reset-btn">Reset Simulation</button>
+        </div>
+
+        <div class="controls-grid">
+            <div class="control-group" style="border-color: var(--host-color);">
+                <h3>Host Susceptibility</h3>
+                <div class="slider-container">
+                    <div class="slider-label"><span>Overcrowding Density</span> <span id="val-h1">0</span></div>
+                    <input type="range" class="risk-slider" id="h1" data-category="host" min="0" max="10" value="0">
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label"><span>Handling Stress</span> <span id="val-h2">0</span></div>
+                    <input type="range" class="risk-slider" id="h2" data-category="host" min="0" max="10" value="0">
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label"><span>Compromised Immunity</span> <span id="val-h3">0</span></div>
+                    <input type="range" class="risk-slider" id="h3" data-category="host" min="0" max="10" value="0">
+                </div>
+            </div>
+
+            <div class="control-group" style="border-color: var(--env-color);">
+                <h3>Environmental Stress</h3>
+                <div class="slider-container">
+                    <div class="slider-label"><span>Temperature Spike</span> <span id="val-e1">0</span></div>
+                    <input type="range" class="risk-slider" id="e1" data-category="env" min="0" max="10" value="0">
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label"><span>Oxygen Decrease</span> <span id="val-e2">0</span></div>
+                    <input type="range" class="risk-slider" id="e2" data-category="env" min="0" max="10" value="0">
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label"><span>Ammonia Accumulation</span> <span id="val-e3">0</span></div>
+                    <input type="range" class="risk-slider" id="e3" data-category="env" min="0" max="10" value="0">
+                </div>
+            </div>
+
+            <div class="control-group" style="border-color: var(--path-color);">
+                <h3>Pathogen Virulence</h3>
+                <div class="slider-container">
+                    <div class="slider-label"><span>Pathogen Load/Availability</span> <span id="val-p1">0</span></div>
+                    <input type="range" class="risk-slider" id="p1" data-category="path" min="0" max="10" value="0">
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label"><span>Ideal Growth Conditions</span> <span id="val-p2">0</span></div>
+                    <input type="range" class="risk-slider" id="p2" data-category="path" min="0" max="10" value="0">
+                </div>
+                <div class="slider-container">
+                    <div class="slider-label"><span>Strain Virulence</span> <span id="val-p3">0</span></div>
+                    <input type="range" class="risk-slider" id="p3" data-category="path" min="0" max="10" value="0">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sliders = document.querySelectorAll('.risk-slider');
+        const statusText = document.getElementById('status-text');
+        const triggerAlert = document.getElementById('trigger-alert');
+        const resetBtn = document.getElementById('reset-btn');
+        
+        const circEnv = document.getElementById('circ-env');
+        const circHost = document.getElementById('circ-host');
+        const circPath = document.getElementById('circ-path');
+
+        function calculateRisk() {
+            let hostScore = 0;
+            let envScore = 0;
+            let pathScore = 0;
+            let allScores = [];
+
+            // Gather values
+            sliders.forEach(slider => {
+                let val = parseInt(slider.value);
+                document.getElementById(`val-${slider.id}`).innerText = val;
+                
+                let factorName = slider.previousElementSibling.querySelector('span:first-child').innerText;
+                allScores.push({ name: factorName, score: val });
+                
+                if (slider.dataset.category === 'host') hostScore += val;
+                if (slider.dataset.category === 'env') envScore += val;
+                if (slider.dataset.category === 'path') pathScore += val;
+            });
+
+            let totalRisk = hostScore + envScore + pathScore;
+            
+            updateVisuals(totalRisk, hostScore, envScore, pathScore, allScores);
+        }
+
+        function updateVisuals(totalRisk, hostScore, envScore, pathScore, allScores) {
+            // 1. Update Venn Diagram Movement
+            let convergenceFactor = totalRisk / 90; 
+            
+            let eY = -30 + (30 * convergenceFactor);
+            let hX = -40 + (40 * convergenceFactor);
+            let hY = 30 - (30 * convergenceFactor);
+            let pX = 40 - (40 * convergenceFactor);
+            let pY = 30 - (30 * convergenceFactor);
+
+            circEnv.style.transform = `translate(0px, ${eY}px)`;
+            circHost.style.transform = `translate(${hX}px, ${hY}px)`;
+            circPath.style.transform = `translate(${pX}px, ${pY}px)`;
+
+            // 2. Status Updates
+            if (totalRisk < 30) {
+                statusText.innerText = "SYSTEM IS HEALTHY";
+                statusText.style.color = "var(--healthy)";
+                triggerAlert.style.display = "none";
+                document.querySelector('.venn-container').style.borderColor = "var(--light-blue)";
+            } 
+            else if (totalRisk >= 30 && totalRisk < 50) { 
+                statusText.innerText = "SUBCLINICAL STRESS";
+                statusText.style.color = "var(--stress)";
+                triggerAlert.style.display = "none";
+                document.querySelector('.venn-container').style.borderColor = "var(--stress)";
+            } 
+            else { 
+                statusText.innerText = "CLINICAL DISEASE OUTBREAK!";
+                statusText.style.color = "var(--outbreak)";
+                document.querySelector('.venn-container').style.borderColor = "var(--outbreak)";
+                
+                // --- DIAGNOSTIC LOGIC ---
+                
+                // Step A: Determine the Primary Category Failure
+                let dominantCat = "Complex Multi-System Failure";
+                let catScores = [
+                    { name: "Host Genetics & Immunity", score: hostScore },
+                    { name: "Environmental Water Quality", score: envScore },
+                    { name: "Pathogen Load & Virulence", score: pathScore }
+                ];
+                catScores.sort((a,b) => b.score - a.score);
+                
+                if (catScores[0].score > catScores[1].score) {
+                    dominantCat = catScores[0].name;
+                }
+
+                // Step B: Find ALL critical individual stressors (Score >= 6)
+                allScores.sort((a, b) => b.score - a.score);
+                let criticalFactors = allScores.filter(f => f.score >= 6);
+                
+                // Step C: Build the Readout
+                let triggerMsg = `<strong>PRIMARY SYSTEM COMPROMISED:</strong> ${dominantCat}<br><br>`;
+                triggerMsg += `<strong>CRITICAL STRESSORS DETECTED:</strong><br>`;
+                
+                if (criticalFactors.length > 0) {
+                    let names = criticalFactors.map(f => `• ${f.name} (${f.score}/10)`);
+                    triggerMsg += names.join("<br>");
+                } else {
+                    // Fallback for "Death by a thousand cuts" 
+                    let moderateFactors = allScores.filter(f => f.score >= 4);
+                    let names = moderateFactors.map(f => `• ${f.name} (${f.score}/10)`);
+                    triggerMsg += names.join("<br>");
+                }
+
+                triggerAlert.innerHTML = triggerMsg;
+                triggerAlert.style.display = "block";
+            }
+        }
+
+        // Add event listeners
+        sliders.forEach(slider => {
+            slider.addEventListener('input', calculateRisk);
+        });
+
+        // Reset functionality
+        resetBtn.addEventListener('click', () => {
+            sliders.forEach(slider => {
+                slider.value = 0; 
+            });
+            calculateRisk(); 
+        });
+
+        // Initialize
+        calculateRisk();
+    </script>
+</body>
+</html>
